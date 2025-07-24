@@ -59,12 +59,12 @@ export function CustomerModal({ open, onClose, onSave, initialData }: {
     try {
       setIsSaving(true);
       await onSave(form);
-      toast.success(initialData ? "Customer updated successfully!" : "Customer created successfully!");
+      
 
       setForm({ navn: "", epost: "", telefonnummer: "" });
       onClose();
     } catch (error) {
-      toast.error("Something went wrong. Please try again.");
+      console.error("Modal submit error:", error);
     } finally {
       setIsSaving(false);
     }
@@ -78,7 +78,7 @@ export function CustomerModal({ open, onClose, onSave, initialData }: {
         </DialogHeader>
         <div className="space-y-3">
           <Input name="navn" value={form.navn} onChange={handleChange} placeholder="Name" />
-          <Input name="epost" value={form.epost} onChange={handleChange} placeholder="Email" />
+          <Input name="epost" value={form.epost} onChange={handleChange} placeholder="Email" readOnly={!!initialData}  className={initialData ? "bg-gray-100 cursor-not-allowed" : ""} />
           <Input name="telefonnummer" value={form.telefonnummer} onChange={handleChange} placeholder="Phone Number" />
         </div>
         <DialogFooter>
