@@ -12,14 +12,22 @@ export const personApi = {
     return res.json();
   },
   async create(person: any) {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(person),
-    });
-    if (!res.ok) throw new Error("Failed to create person");
-    return res.json();
-  },
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(person),
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.json(); // 👈 Read the JSON error
+    const message = errorBody?.message || "Failed to create person";
+    throw new Error(message); // 👈 Forward proper message
+  }
+
+  return res.json();
+}
+
+,
   async update(id: number, person: any) {
     const res = await fetch(`${API_URL}/${id}`, {
       method: "PUT",

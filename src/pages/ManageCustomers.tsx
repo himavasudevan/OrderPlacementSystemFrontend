@@ -59,21 +59,25 @@ export default function ManageCustomer() {
   }
 
   async function handleSave(data: any) {
-    try {
-      if (editingCustomer) {
-        await personApi.update(editingCustomer.id, { ...data, roleId: editingCustomer.roleId });
-        toast.success("Customer updated!");
-      } else {
-        await personApi.create({ ...data, roleId: 2 });
-        toast.success("Customer created!");
-      }
-      fetchCustomers();
-      setEditingCustomer(null);
-    } catch (error) {
-      toast.error("Failed to save customer");
-      console.error(error);
+  try {
+    if (editingCustomer) {
+      await personApi.update(editingCustomer.id, { ...data, roleId: editingCustomer.roleId });
+      toast.success("Customer updated!");
+    } else {
+      await personApi.create({ ...data, roleId: 2 });
+      toast.success("Customer created!"); // ✅ only runs if no error above
     }
+    fetchCustomers();
+    setEditingCustomer(null);
+  } catch (error: any) {
+    toast.error(error.message || "Failed to save customer");
+    console.error("Save Error:", error);
   }
+}
+
+
+
+
 
   async function handleDeleteConfirmed() {
   if (!customerToDelete) return;
