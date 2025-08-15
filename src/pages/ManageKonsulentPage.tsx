@@ -2,136 +2,131 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { personApi } from "@/api/personApi";
-import type { CreateCustomerDTO, PersonDTO } from "@/api/personApi";
+import type { CreateKonsulentDTO, PersonDTO } from "@/api/personApi";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { CustomerModal } from "@/components/CustomerModal";
 import { Pencil, Trash2, Plus, Filter, ArrowUpDown } from "lucide-react";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { KonsulentModal } from "@/components/KonsulentModal";
 
-type Customer = PersonDTO;
+type Konsulent = PersonDTO;
 
-export default function ManageCustomer() {
+export default function ManageKonsulentPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [konsulentToDelete, setKonsulentToDelete] = useState<Konsulent | null>(null);
+  const [konsulenter, setKonsulenter] = useState<Konsulent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editingKonsulent, setEditingKonsulent] = useState<Konsulent | null>(null);
 
   const [search, setSearch] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string>("all");
-  const [sortField, setSortField] = useState<keyof Customer | "">("");
+  const [sortField, setSortField] = useState<keyof Konsulent | "">("");
   const [sortAsc, setSortAsc] = useState(true);
 
-  const itemsPerPage = 5;
+
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    fetchCustomers();
+    fetchKonsulenter();
   }, []);
 
-  async function fetchCustomers() {
+  async function fetchKonsulenter() {
     try {
       setLoading(true);
-      const data = await personApi.getAll(); // customer-only endpoint
+      const data = await personApi.getAllKonsulenter(); // role_id = 2
       if (!Array.isArray(data)) throw new Error("Invalid data format");
-      // type guard-ish mapping
-      const mapped: Customer[] = data.map((c: any) => ({
-        id: c.id,
-        navn: c.navn,
-        epost: c.epost,
-        telefonnummer: c.telefonnummer,
-        roleId: c.roleId,
+      const mapped: Konsulent[] = data.map((k: any) => ({
+        id: k.id,
+        navn: k.navn,
+        epost: k.epost,
+        telefonnummer: k.telefonnummer,
+        roleId: k.roleId,
       }));
-      setCustomers(mapped);
+      setKonsulenter(mapped);
     } catch (error: any) {
       const msg =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Failed to fetch customers";
+        "Failed to fetch konsulenter";
       toast.error(msg);
+      // eslint-disable-next-line no-console
       console.error(error);
     } finally {
       setLoading(false);
     }
   }
 
-  // CREATE
-  async function handleCreate(data: CreateCustomerDTO) {
+  // CREATE (requires password)
+  async function handleCreate(data: CreateKonsulentDTO) {
     try {
-      await personApi.create(data); // API forces roleId = CUSTOMER
-      toast.success("Customer created!");
-      await fetchCustomers();
+      await personApi.createKonsulent(data); // API will enforce roleId=KONSULENT if omitted
+      toast.success("Konsulent created!");
+      await fetchKonsulenter();
       setShowModal(false);
     } catch (error: any) {
       const msg =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Failed to create customer";
+        "Failed to create konsulent";
       toast.error(msg);
+      // eslint-disable-next-line no-console
       console.error("Create Error:", error);
     }
   }
 
-  // UPDATE
+  // UPDATE (no password here)
   async function handleUpdate(data: Partial<PersonDTO>) {
-    if (!editingCustomer) return;
+    if (!editingKonsulent) return;
     try {
-      await personApi.update(editingCustomer.id, {
+      await personApi.update(editingKonsulent.id, {
         ...data,
-        roleId: editingCustomer.roleId, // keep role as customer
+        roleId: editingKonsulent.roleId, // keep konsulent role
       });
-      toast.success("Customer updated!");
-      await fetchCustomers();
-      setEditingCustomer(null);
+      toast.success("Konsulent updated!");
+      await fetchKonsulenter();
+      setEditingKonsulent(null);
       setShowModal(false);
     } catch (error: any) {
       const msg =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Failed to update customer";
+        "Failed to update konsulent";
       toast.error(msg);
+      // eslint-disable-next-line no-console
       console.error("Update Error:", error);
     }
   }
 
   // DELETE
   async function handleDeleteConfirmed() {
-    if (!customerToDelete) return;
+    if (!konsulentToDelete) return;
     try {
-      await personApi.delete(customerToDelete.id);
-      toast.success("Customer deleted");
-      await fetchCustomers();
+      await personApi.delete(konsulentToDelete.id);
+      toast.success("Konsulent deleted");
+      await fetchKonsulenter();
     } catch (err: any) {
       const errorMsg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
-        "Failed to delete customer";
-      toast.error(errorMsg); // e.g., "Cannot delete person because they have existing orders."
+        "Failed to delete konsulent";
+      toast.error(errorMsg);
     } finally {
       setDeleteModalOpen(false);
-      setCustomerToDelete(null);
+      setKonsulentToDelete(null);
     }
   }
 
-  function handleSort(field: keyof Customer) {
+  function handleSort(field: keyof Konsulent) {
     if (sortField === field) setSortAsc(!sortAsc);
     else {
       setSortField(field);
@@ -139,25 +134,25 @@ export default function ManageCustomer() {
     }
   }
 
-  // Build domain list from current data (plus common defaults)
+  // domain list
   const domainOptions = useMemo(() => {
     const domains = new Set<string>();
-    customers.forEach((c) => {
-      const d = c?.epost?.split("@")[1];
+    konsulenter.forEach((k) => {
+      const d = k?.epost?.split("@")[1];
       if (d) domains.add(d.toLowerCase());
     });
     ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"].forEach((d) => domains.add(d));
     return ["all", ...Array.from(domains).sort()];
-  }, [customers]);
+  }, [konsulenter]);
 
   const filtered = useMemo(() => {
-    return (customers ?? [])
-      .filter((c) => {
-        const epost = (c.epost ?? "").toLowerCase();
+    return (konsulenter ?? [])
+      .filter((k) => {
+        const epost = (k.epost ?? "").toLowerCase();
         const domain = epost.split("@")[1] ?? "";
         const matchesDomain = selectedDomain === "all" || domain === selectedDomain;
         const matchesSearch =
-          (c.navn ?? "").toLowerCase().includes(search.toLowerCase()) ||
+          (k.navn ?? "").toLowerCase().includes(search.toLowerCase()) ||
           epost.includes(search.toLowerCase());
         return matchesDomain && matchesSearch;
       })
@@ -169,19 +164,19 @@ export default function ManageCustomer() {
           ? String(valA).localeCompare(String(valB))
           : String(valB).localeCompare(String(valA));
       });
-  }, [customers, search, selectedDomain, sortField, sortAsc]);
+  }, [konsulenter, search, selectedDomain, sortField, sortAsc]);
 
+  const itemsPerPage = 5;
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  // reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
   }, [search, selectedDomain]);
 
   useEffect(() => {
     if (!loading && search && filtered.length === 0) {
-      toast.error("No matching customers found.");
+      toast.error("No matching konsulenter found.");
     }
   }, [filtered, search, loading]);
 
@@ -189,15 +184,15 @@ export default function ManageCustomer() {
     <>
       <main className="max-w-6xl mx-auto p-6 space-y-6 bg-background text-foreground">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-semibold">Manage Customers</h1>
+          <h1 className="text-3xl font-semibold">Manage Konsulenter</h1>
           <Button
             onClick={() => {
-              setEditingCustomer(null);
+              setEditingKonsulent(null);
               setShowModal(true);
             }}
             className="rounded-xl"
           >
-            <Plus className="mr-2 h-4 w-4" /> New Customer
+            <Plus className="mr-2 h-4 w-4" /> New Konsulent
           </Button>
         </div>
 
@@ -237,47 +232,39 @@ export default function ManageCustomer() {
                       className="font-semibold cursor-pointer text-foreground"
                       onClick={() => handleSort("navn")}
                     >
-                      Name{" "}
-                      <ArrowUpDown className="inline ml-1 h-4 w-4 text-muted-foreground" />
+                      Name <ArrowUpDown className="inline ml-1 h-4 w-4 text-muted-foreground" />
                     </TableHead>
                     <TableHead
                       className="font-semibold cursor-pointer text-foreground"
                       onClick={() => handleSort("epost")}
                     >
-                      Email{" "}
-                      <ArrowUpDown className="inline ml-1 h-4 w-4 text-muted-foreground" />
+                      Email <ArrowUpDown className="inline ml-1 h-4 w-4 text-muted-foreground" />
                     </TableHead>
                     <TableHead
                       className="font-semibold cursor-pointer text-foreground"
                       onClick={() => handleSort("telefonnummer")}
                     >
-                      Phone{" "}
-                      <ArrowUpDown className="inline ml-1 h-4 w-4 text-muted-foreground" />
+                      Phone <ArrowUpDown className="inline ml-1 h-4 w-4 text-muted-foreground" />
                     </TableHead>
-                    <TableHead className="text-right font-semibold text-foreground">
-                      Actions
-                    </TableHead>
+                    <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginated.map((customer) => (
-                    <TableRow
-                      key={customer.id}
-                      className="hover:bg-accent/50 even:bg-muted/30 transition-colors"
-                    >
-                      <TableCell className="py-3">{customer.navn}</TableCell>
-                      <TableCell className="py-3">{customer.epost}</TableCell>
-                      <TableCell className="py-3">{customer.telefonnummer}</TableCell>
+                  {paginated.map((konsulent) => (
+                    <TableRow key={konsulent.id} className="hover:bg-accent/50 even:bg-muted/30 transition-colors">
+                      <TableCell className="py-3">{konsulent.navn}</TableCell>
+                      <TableCell className="py-3">{konsulent.epost}</TableCell>
+                      <TableCell className="py-3">{konsulent.telefonnummer}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            setEditingCustomer(customer);
+                            setEditingKonsulent(konsulent);
                             setShowModal(true);
                           }}
                           className="hover:bg-accent"
-                          aria-label="Edit customer"
+                          aria-label="Edit konsulent"
                           title="Edit"
                         >
                           <Pencil className="h-4 w-4 text-primary" />
@@ -286,11 +273,11 @@ export default function ManageCustomer() {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            setCustomerToDelete(customer);
+                            setKonsulentToDelete(konsulent);
                             setDeleteModalOpen(true);
                           }}
                           className="hover:bg-accent"
-                          aria-label="Delete customer"
+                          aria-label="Delete konsulent"
                           title="Delete"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -300,11 +287,8 @@ export default function ManageCustomer() {
                   ))}
                   {paginated.length === 0 && !loading && (
                     <TableRow>
-                      <TableCell
-                        colSpan={4}
-                        className="text-center text-muted-foreground py-4"
-                      >
-                        No customers to display.
+                      <TableCell colSpan={4} className="text-center text-muted-foreground py-4">
+                        No konsulenter to display.
                       </TableCell>
                     </TableRow>
                   )}
@@ -339,39 +323,38 @@ export default function ManageCustomer() {
         </div>
       </main>
 
-      {/* Modal: switch between create/edit and pass correctly typed onSave */}
-      {editingCustomer ? (
-  <CustomerModal
-    mode="edit"
-    open={showModal}
-    onClose={() => {
-      setShowModal(false);
-      setEditingCustomer(null);
-    }}
-    onSave={handleUpdate}               // (data: Partial<PersonDTO>) => Promise<void>
-    initialData={editingCustomer}       // required in edit mode
-  />
-) : (
-  <CustomerModal
-    mode="create"
-    open={showModal}
-    onClose={() => {
-      setShowModal(false);
-      setEditingCustomer(null);
-    }}
-    onSave={handleCreate}               // (data: CreateCustomerDTO) => Promise<void>
-    // no initialData in create mode
-  />
-)}
+      {/* Render modal with discriminated props to satisfy TS */}
+      {editingKonsulent ? (
+        <KonsulentModal
+          mode="edit"
+          open={showModal}
+          onClose={() => {
+            setShowModal(false);
+            setEditingKonsulent(null);
+          }}
+          onSave={handleUpdate} // Partial<PersonDTO>
+          initialData={editingKonsulent}
+        />
+      ) : (
+        <KonsulentModal
+          mode="create"
+          open={showModal}
+          onClose={() => {
+            setShowModal(false);
+            setEditingKonsulent(null);
+          }}
+          onSave={handleCreate} // CreateKonsulentDTO
+        />
+      )}
 
       <ConfirmModal
         open={deleteModalOpen}
-        title="Delete Customer"
-        description={`Are you sure you want to delete "${customerToDelete?.navn}"? This action cannot be undone.`}
+        title="Delete Konsulent"
+        description={`Are you sure you want to delete "${konsulentToDelete?.navn}"? This action cannot be undone.`}
         onConfirm={handleDeleteConfirmed}
         onCancel={() => {
           setDeleteModalOpen(false);
-          setCustomerToDelete(null);
+          setKonsulentToDelete(null);
         }}
       />
     </>

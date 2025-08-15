@@ -17,7 +17,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, Trash2, ArrowUpDown } from "lucide-react";
+import { Plus, Eye, Trash2, ArrowUpDown, PencilLine } from "lucide-react";
 import OrderModal from "@/components/OrderModal";
 
 interface Tjeneste {
@@ -33,7 +33,7 @@ interface Order {
   id: number;
   customerName: string;
   customerEmail: string;
-  customerPhonenumber:string;
+  customerPhonenumber: string;
   consultantName: string;
   services: Tjeneste[];
   totalPrice: number;
@@ -51,20 +51,20 @@ const ManageOrders = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const {  remove } = useOrder(); 
+  const { remove } = useOrder();
 
-const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-const [orderToDelete, setOrderToDelete] = useState<number | null>(null);
-
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     fetchOrders();
   }, []);
+
   useEffect(() => {
-  if (modalMode === "view" && selectedOrder) {
-    setModalOpen(true);
-  }
-}, [selectedOrder, modalMode]);
+    if (modalMode === "view" && selectedOrder) {
+      setModalOpen(true);
+    }
+  }, [selectedOrder, modalMode]);
 
   async function fetchOrders() {
     try {
@@ -77,7 +77,7 @@ const [orderToDelete, setOrderToDelete] = useState<number | null>(null);
         customerName: o.kundeNavn ?? "",
         customerEmail: o.kundeEpost ?? "",
         consultantName: o.konsulentNavn ?? "",
-        customerPhonenumber:o.kundeTelefonnummer ?? "",
+        customerPhonenumber: o.kundeTelefonnummer ?? "",
         services: o.tjenester ?? [],
         totalPrice: o.totalPris ?? 0,
       }));
@@ -119,31 +119,31 @@ const [orderToDelete, setOrderToDelete] = useState<number | null>(null);
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginated = filteredOrders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-const handleDeleteClick = (orderId: number) => {
-  setOrderToDelete(orderId);
-  setDeleteModalOpen(true);
-};
-const handleConfirmDelete = async () => {
-  if (orderToDelete === null) return;
 
-  try {
-    await remove(orderToDelete);
-    toast.success("Order deleted successfully!");
-    await fetchOrders(); // ✅ refresh orders from API
-  } catch (error) {
-    toast.error("Failed to delete order.");
-    console.error(error);
-  } finally {
+  const handleDeleteClick = (orderId: number) => {
+    setOrderToDelete(orderId);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (orderToDelete === null) return;
+    try {
+      await remove(orderToDelete);
+      toast.success("Order deleted successfully!");
+      await fetchOrders();
+    } catch (error) {
+      toast.error("Failed to delete order.");
+      console.error(error);
+    } finally {
+      setDeleteModalOpen(false);
+      setOrderToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
     setDeleteModalOpen(false);
     setOrderToDelete(null);
-  }
-};
-
-const handleCancelDelete = () => {
-  setDeleteModalOpen(false);
-  setOrderToDelete(null);
-};
-
+  };
 
   const handleCreateOrder = () => {
     setSelectedOrder(null);
@@ -151,63 +151,58 @@ const handleCancelDelete = () => {
     setModalOpen(true);
   };
 
- const handleViewOrder = async (order: Order) => {
-  try {
-    setLoading(true);
-    const fullOrder = await orderApi.getById(order.id);
-    const mappedOrder: Order = {
-      id: fullOrder.orderId,
-      customerName: fullOrder.kundeNavn,
-      customerEmail: fullOrder.kundeEpost,
-      customerPhonenumber: fullOrder.kundeTelefonnummer,
-      consultantName: fullOrder.konsulentNavn,
-      services: fullOrder.tjenester,
-      totalPrice: fullOrder.totalPris,
-    };
-    setSelectedOrder(mappedOrder);
-    setModalMode("view");
-    setModalOpen(true);
-  } catch (error) {
-    toast.error("Failed to fetch order details");
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleViewOrder = async (order: Order) => {
+    try {
+      setLoading(true);
+      const fullOrder = await orderApi.getById(order.id);
+      const mappedOrder: Order = {
+        id: fullOrder.orderId,
+        customerName: fullOrder.kundeNavn,
+        customerEmail: fullOrder.kundeEpost,
+        customerPhonenumber: fullOrder.kundeTelefonnummer,
+        consultantName: fullOrder.konsulentNavn,
+        services: fullOrder.tjenester,
+        totalPrice: fullOrder.totalPris,
+      };
+      setSelectedOrder(mappedOrder);
+      setModalMode("view");
+      setModalOpen(true);
+    } catch (error) {
+      toast.error("Failed to fetch order details");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const handleEditOrder = async (orderId: number) => {
-  try {
-    setModalMode("edit");
-    setLoading(true);
-
-    const fullOrder = await orderApi.getById(orderId);
-    const mappedOrder: Order = {
-      id: fullOrder.orderId,
-      customerName: fullOrder.kundeNavn,
-      customerEmail: fullOrder.kundeEpost,
-      customerPhonenumber:fullOrder.kundeTelefonnummer,
-      consultantName: fullOrder.konsulentNavn,
-      services: fullOrder.tjenester,
-      totalPrice: fullOrder.totalPris,
-    };
-
-    setSelectedOrder(mappedOrder);
-    setModalOpen(true);
-  } catch (err) {
-    toast.error("Failed to fetch order details");
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleEditOrder = async (orderId: number) => {
+    try {
+      setModalMode("edit");
+      setLoading(true);
+      const fullOrder = await orderApi.getById(orderId);
+      const mappedOrder: Order = {
+        id: fullOrder.orderId,
+        customerName: fullOrder.kundeNavn,
+        customerEmail: fullOrder.kundeEpost,
+        customerPhonenumber: fullOrder.kundeTelefonnummer,
+        consultantName: fullOrder.konsulentNavn,
+        services: fullOrder.tjenester,
+        totalPrice: fullOrder.totalPris,
+      };
+      setSelectedOrder(mappedOrder);
+      setModalOpen(true);
+    } catch {
+      toast.error("Failed to fetch order details");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-semibold text-gray-800">Manage Orders</h2>
-        <Button
-          className="bg-blue-600 hover:bg-blue-700 text-white shadow rounded-xl"
-          onClick={handleCreateOrder}
-        >
+        <h2 className="text-3xl font-semibold text-foreground">Manage Orders</h2>
+        <Button className="rounded-xl" onClick={handleCreateOrder}>
           <Plus className="mr-2" /> Create Order
         </Button>
       </div>
@@ -227,7 +222,7 @@ const handleEditOrder = async (orderId: number) => {
         />
       </div>
 
-      <Card className="shadow-lg rounded-2xl border border-gray-100">
+      <Card className="shadow-lg rounded-2xl border border-border">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-2 p-6">
@@ -239,66 +234,77 @@ const handleEditOrder = async (orderId: number) => {
             <p className="p-6 text-muted-foreground">No orders found.</p>
           ) : (
             <Table>
-              <TableHeader className="bg-gray-100">
+              <TableHeader className="bg-muted">
                 <TableRow>
-                  {["id", "customerName", "customerEmail", "consultantName", "totalPrice"].map((field) => (
-                    <TableHead
-                      key={field}
-                      onClick={() => handleSort(field as keyof Order)}
-                      className="cursor-pointer select-none text-gray-700 font-semibold"
-                    >
-                      <span className="inline-flex items-center">
-                        {field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
-                        <ArrowUpDown size={16} className="ml-1" />
-                      </span>
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-gray-700 font-semibold">Services</TableHead>
-                  <TableHead className="text-right text-gray-700 font-semibold">Actions</TableHead>
+                  {["id", "customerName", "customerEmail", "consultantName", "totalPrice"].map(
+                    (field) => (
+                      <TableHead
+                        key={field}
+                        onClick={() => handleSort(field as keyof Order)}
+                        className="cursor-pointer select-none text-foreground font-semibold"
+                      >
+                        <span className="inline-flex items-center">
+                          {field
+                            .replace(/([A-Z])/g, " $1")
+                            .replace(/^./, (str) => str.toUpperCase())}
+                          <ArrowUpDown size={16} className="ml-1 text-muted-foreground" />
+                        </span>
+                      </TableHead>
+                    )
+                  )}
+                  <TableHead className="text-foreground font-semibold">Services</TableHead>
+                  <TableHead className="text-right text-foreground font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginated.map((order) => (
-                  <TableRow key={order.id} className="hover:bg-gray-50">
+                  <TableRow
+                    key={order.id}
+                    className="hover:bg-muted/50 transition-colors"
+                  >
                     <TableCell>{order.id}</TableCell>
                     <TableCell>{order.customerName}</TableCell>
                     <TableCell>{order.customerEmail}</TableCell>
                     <TableCell>{order.consultantName}</TableCell>
                     <TableCell>{order.totalPrice} kr</TableCell>
                     <TableCell className="flex flex-wrap gap-1">
-                      {order.services.flatMap((s) => s.tjenester).map((service, idx) => (
-                        <Badge key={idx} variant="secondary">
-                          {service}
-                        </Badge>
-                      ))}
+                      {order.services
+                        .flatMap((s) => s.tjenester)
+                        .map((service, idx) => (
+                          <Badge key={idx} variant="secondary">
+                            {service}
+                          </Badge>
+                        ))}
                     </TableCell>
                     <TableCell className="text-right space-x-1">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="hover:bg-blue-50"
+                        className="hover:bg-muted"
                         onClick={() => handleViewOrder(order)}
+                        aria-label="View order"
                       >
-                        <Eye size={18} className="text-blue-600" />
+                        <Eye size={18} className="text-primary" />
                       </Button>
-
-                      <Button
-  variant="ghost"
-  size="icon"
-  className="hover:bg-yellow-50"
-  onClick={() => handleEditOrder(order.id)}
->
-  ✏️
-</Button>
-
 
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="hover:bg-red-50"
-                        onClick={() => handleDeleteClick(order.id)}
+                        className="hover:bg-muted"
+                        onClick={() => handleEditOrder(order.id)}
+                        aria-label="Edit order"
                       >
-                        <Trash2 size={18} className="text-red-600" />
+                        <PencilLine size={18} className="text-muted-foreground" />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:bg-muted"
+                        onClick={() => handleDeleteClick(order.id)}
+                        aria-label="Delete order"
+                      >
+                        <Trash2 size={18} className="text-destructive" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -310,9 +316,16 @@ const handleEditOrder = async (orderId: number) => {
       </Card>
 
       <div className="flex justify-between items-center">
-        <span className="text-gray-600">Page {page} of {totalPages}</span>
+        <span className="text-muted-foreground">
+          Page {page} of {totalPages}
+        </span>
         <div className="space-x-2">
-          <Button variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="rounded-xl">
+          <Button
+            variant="outline"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="rounded-xl"
+          >
             Prev
           </Button>
           <Button
@@ -333,14 +346,14 @@ const handleEditOrder = async (orderId: number) => {
         order={selectedOrder}
         refreshOrders={fetchOrders}
       />
-      <ConfirmModal
-  open={deleteModalOpen}
-  title="Delete Order?"
-  description="Are you sure you want to delete this order? This action cannot be undone."
-  onConfirm={handleConfirmDelete}
-  onCancel={handleCancelDelete}
-/>
 
+      <ConfirmModal
+        open={deleteModalOpen}
+        title="Delete Order?"
+        description="Are you sure you want to delete this order? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </main>
   );
 };

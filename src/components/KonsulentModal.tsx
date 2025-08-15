@@ -12,13 +12,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import type { CreateCustomerDTO, PersonDTO } from "@/api/personApi";
+import type { CreateKonsulentDTO, PersonDTO } from "@/api/personApi";
 
 type CreateProps = {
   mode: "create";
   open: boolean;
   onClose: () => void;
-  onSave: (data: CreateCustomerDTO) => Promise<void>;
+  onSave: (data: CreateKonsulentDTO) => Promise<void>;
   initialData?: undefined;
 };
 
@@ -30,51 +30,53 @@ type EditProps = {
   initialData: PersonDTO;
 };
 
-type CustomerModalProps = CreateProps | EditProps;
+type KonsulentModalProps = CreateProps | EditProps;
 
-export function CustomerModal(props: CustomerModalProps) {
+export function KonsulentModal(props: KonsulentModalProps) {
   const { mode, open, onClose, onSave } = props;
 
-  const [form, setForm] = useState<CreateCustomerDTO>({
-    navn: "",
-    epost: "",
-    telefonnummer: "",
-  });
+  // local form state
+  const [navn, setNavn] = useState("");
+  const [epost, setEpost] = useState("");
+  const [telefonnummer, setTelefonnummer] = useState("");
+  const [password, setPassword] = useState(""); // only used in create mode
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (mode === "edit") {
       const { initialData } = props;
-      setForm({
-        navn: initialData.navn ?? "",
-        epost: initialData.epost ?? "",
-        telefonnummer: initialData.telefonnummer ?? "",
-      });
+      setNavn(initialData.navn ?? "");
+      setEpost(initialData.epost ?? "");
+      setTelefonnummer(initialData.telefonnummer ?? "");
+      setPassword(""); // not used
     } else {
-      setForm({ navn: "", epost: "", telefonnummer: "" });
+      setNavn("");
+      setEpost("");
+      setTelefonnummer("");
+      setPassword("");
     }
-    // re-run when opening/closing so the form resets properly
+    // re-init when modal opens/closes or mode changes
   }, [open, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const validateEmail = (epost: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost);
-  const validatePhoneNumber = (telefonnummer: string) => /^\d{10}$/.test(telefonnummer);
+  const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const validatePhone = (v: string) => /^\d{10}$/.test(v);
+  const validatePassword = (v: string) => v.trim().length >= 8;
 
   const handleSubmit = async () => {
-    // simple client-side validation
-    if (!form.navn.trim() || !form.epost.trim() || !form.telefonnummer.trim()) {
-      toast.error("All fields are required");
+    if (!navn.trim() || !epost.trim() || !telefonnummer.trim()) {
+      toast.error("Name, email, and phone are required.");
       return;
     }
-    if (!validateEmail(form.epost)) {
+    if (!validateEmail(epost)) {
       toast.error("Please enter a valid email address.");
       return;
     }
-    if (!validatePhoneNumber(form.telefonnummer)) {
+    if (!validatePhone(telefonnummer)) {
       toast.error("Phone number must contain exactly 10 digits.");
+      return;
+    }
+    if (mode === "create" && !validatePassword(password)) {
+      toast.error("Password must be at least 8 characters.");
       return;
     }
 
@@ -82,24 +84,24 @@ export function CustomerModal(props: CustomerModalProps) {
       setIsSaving(true);
       if (mode === "create") {
         await onSave({
-          navn: form.navn.trim(),
-          epost: form.epost.trim(),
-          telefonnummer: form.telefonnummer.trim(),
-          // roleId is optional; server/personApi forces CUSTOMER
+          navn: navn.trim(),
+          epost: epost.trim(),
+          telefonnummer: telefonnummer.trim(),
+          password: password, // server will hash
+          // roleId optional; API enforces konsulent role if omitted
         });
       } else {
         await onSave({
-          navn: form.navn.trim(),
-          epost: form.epost.trim(),
-          telefonnummer: form.telefonnummer.trim(),
-          // roleId unchanged in parent update handler
+          navn: navn.trim(),
+          epost: epost.trim(),
+          telefonnummer: telefonnummer.trim(),
         });
       }
       onClose();
     } catch (error) {
-      // parent already toasts on error; keep console for devs
+      // parent handles toast; just log for dev
       // eslint-disable-next-line no-console
-      console.error("CustomerModal submit error:", error);
+      console.error("KonsulentModal submit error:", error);
     } finally {
       setIsSaving(false);
     }
@@ -109,7 +111,7 @@ export function CustomerModal(props: CustomerModalProps) {
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="sm:max-w-md rounded-xl border border-border bg-card text-card-foreground">
         <DialogHeader>
-          <DialogTitle>{mode === "edit" ? "Edit Customer" : "Create Customer"}</DialogTitle>
+          <DialogTitle>{mode === "edit" ? "Edit Konsulent" : "Create Konsulent"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -118,8 +120,8 @@ export function CustomerModal(props: CustomerModalProps) {
             <Input
               id="navn"
               name="navn"
-              value={form.navn}
-              onChange={handleChange}
+              value={navn}
+              onChange={(e) => setNavn(e.target.value)}
               placeholder="Name"
               autoFocus
             />
@@ -130,10 +132,10 @@ export function CustomerModal(props: CustomerModalProps) {
             <Input
               id="epost"
               name="epost"
-              value={form.epost}
-              onChange={handleChange}
+              value={epost}
+              onChange={(e) => setEpost(e.target.value)}
               placeholder="Email"
-              readOnly={mode === "edit"} // keep email immutable when editing to avoid uniqueness pain
+              readOnly={mode === "edit"}
               className={mode === "edit" ? "bg-muted/50 text-muted-foreground cursor-not-allowed" : ""}
             />
           </div>
@@ -143,13 +145,27 @@ export function CustomerModal(props: CustomerModalProps) {
             <Input
               id="telefonnummer"
               name="telefonnummer"
-              value={form.telefonnummer}
-              onChange={handleChange}
+              value={telefonnummer}
+              onChange={(e) => setTelefonnummer(e.target.value)}
               placeholder="Phone Number"
               inputMode="numeric"
               pattern="\d{10}"
             />
           </div>
+
+          {mode === "create" && (
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Min 8 characters"
+              />
+            </div>
+          )}
         </div>
 
         <DialogFooter className="flex justify-end gap-2">
@@ -170,3 +186,4 @@ export function CustomerModal(props: CustomerModalProps) {
     </Dialog>
   );
 }
+

@@ -1,39 +1,148 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import ManageCustomers from "@/pages/ManageCustomers";
-import { Toaster } from "@/components/ui/sonner";
+// src/App.tsx
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
+import LoginPage from "./pages/LoginPage";
+import ManageCustomer from "./pages/ManageCustomers";
 import ManageOrders from "./pages/ManageOrders";
+import HomaPage from "./pages/HomaPage"; 
+
+
+import ConsultantLayout from "./layouts/ConsultantLayout";
+import ManageKonsulentPage from "./pages/ManageKonsulentPage";
+import PasswordPage from "./pages/PasswordUpdatePage";
 
 export default function App() {
+  const { isAuthenticated,user } = useAuth();
+
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow px-4 py-3 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-blue-600">Order Placement System</h1>
-          <nav className="flex gap-4">
-            <Link to="/" className="hover:text-blue-600">Orders</Link>
-            <Link to="/customers" className="hover:text-blue-600">Customers</Link>
-          </nav>
-        </header>
+      <Routes>
+        {/* Public */}
+        <Route path="/login" element={<LoginPage />} />
 
-        {/* Main content */}
-        <main className="flex-1 p-4">
-          <Routes>
-            <Route path="/" element={< ManageOrders/>} />
-            <Route path="/customers" element={<ManageCustomers />} />
-          </Routes>
-        </main>
 
-        {/* Footer */}
-        <footer className="text-center text-sm text-gray-500 py-4 border-t">
-          © {new Date().getFullYear()}  Order Placement System
-        </footer>
+         {/* admin home */}
+        <Route
+          path="/admin"
+          element={
+            isAuthenticated && user?.role === "admin" ? (
+             <ConsultantLayout>
+              <HomaPage/>
+             </ConsultantLayout>
+              
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
-        {/* Global toaster for notifications */}
-        <Toaster position="top-right" richColors />
-      </div>
+
+        {/* admin pages */}
+        <Route
+          path="/admin/customers"
+          element={
+           isAuthenticated && user?.role === "admin" ? (
+              <ConsultantLayout>
+              <ManageCustomer />
+              </ConsultantLayout>
+              ) : (
+              <Navigate to="/login" replace />
+            )
+            
+          }
+        />
+
+
+        <Route
+          path="/admin/konsulent"
+          element={
+           isAuthenticated && user?.role === "admin" ? (
+              <ConsultantLayout>
+              <ManageKonsulentPage />
+              </ConsultantLayout>
+              ) : (
+              <Navigate to="/login" replace />
+            )
+            
+          }
+        />
+
+
+        {/* Consultant home */}
+        <Route
+          path="/konsulent"
+          element={
+            isAuthenticated && user?.role === "Konsulent" ? (
+             <ConsultantLayout>
+              <HomaPage/>
+             </ConsultantLayout>
+              
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Consultant pages */}
+        <Route
+          path="/konsulent/customers"
+          element={
+           isAuthenticated && user?.role === "Konsulent" ? (
+              <ConsultantLayout>
+              <ManageCustomer />
+              </ConsultantLayout>
+              ) : (
+              <Navigate to="/login" replace />
+            )
+            
+          }
+        />
+
+        <Route
+          path="/konsulent/orders"
+          element={
+            isAuthenticated && user?.role === "Konsulent" ? (
+              <ConsultantLayout>
+              <ManageOrders />
+              </ConsultantLayout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+            
+          }
+        />
+
+
+
+
+
+        {/* Consultant pages */}
+        <Route
+          path="/konsulent/password"
+          element={
+           isAuthenticated && user?.role === "Konsulent" ? (
+              <ConsultantLayout>
+              <PasswordPage />
+              </ConsultantLayout>
+              ) : (
+              <Navigate to="/login" replace />
+            )
+            
+          }
+        />
+
+        {/* Default route – redirect based on role */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated && user?.role ? (
+              <Navigate to={`/${user.role.toLowerCase()}`} replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+      </Routes>
     </Router>
   );
 }
-
-

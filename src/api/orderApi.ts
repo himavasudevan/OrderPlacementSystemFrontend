@@ -1,60 +1,45 @@
-// src/api/orderApi.ts
-const ORDER_API_URL = "http://localhost:8080/api/orders";
+import axiosInstance from "./axiosInstance";
+
+const ORDER_API_URL = "/api/orders";
 
 export const orderApi = {
   async getAll() {
-    const res = await fetch(ORDER_API_URL);
-    if (!res.ok) throw new Error("Failed to fetch orders");
-    return res.json();
+    const res = await axiosInstance.get(ORDER_API_URL);
+    return res.data;
   },
 
   async getById(id: number) {
-    const res = await fetch(`${ORDER_API_URL}/${id}`);
-    if (!res.ok) throw new Error("Failed to fetch order");
-    return res.json();
+    const res = await axiosInstance.get(`${ORDER_API_URL}/${id}`);
+    return res.data;
   },
 
   async create(order: any) {
-    const res = await fetch(ORDER_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(order),
-    });
-    if (!res.ok) throw new Error("Failed to create order");
-    return res.json();
+    const res = await axiosInstance.post(ORDER_API_URL, order);
+    return res.data;
   },
 
   async update(id: number, order: any) {
-    const res = await fetch(`${ORDER_API_URL}/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(order),
-    });
-    if (!res.ok) throw new Error("Failed to update order");
-    return res.json();
+    const res = await axiosInstance.put(`${ORDER_API_URL}/${id}`, order);
+    return res.data;
   },
 
   async delete(id: number) {
-    const res = await fetch(`${ORDER_API_URL}/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete order");
+    await axiosInstance.delete(`${ORDER_API_URL}/${id}`);
     return true;
   },
 
-  // Optional: check by email before creating
   async checkEmailAndGetPerson(email: string) {
-  const res = await fetch(`${ORDER_API_URL}/email-check?email=${encodeURIComponent(email)}`);
+    const res = await axiosInstance.get(`${ORDER_API_URL}/email-check`, {
+      params: { email },
+      validateStatus: () => true // handle 404 manually
+    });
 
-  if (res.status === 404) {
-    // No customer found
-    return null;
+    if (res.status === 404) {
+      return null;
+    }
+    if (res.status >= 400) {
+      throw new Error("Failed to check email");
+    }
+    return res.data;
   }
-
-  if (!res.ok) {
-    // Some other error (e.g., 500)
-    throw new Error("Failed to check email");
-  }
-
-  return res.json(); // Customer found, return person
-}
-
 };
