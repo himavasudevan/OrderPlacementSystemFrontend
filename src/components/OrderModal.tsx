@@ -1,6 +1,13 @@
 // components/OrderModal.tsx
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter, // 👈 added
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -8,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useOrder } from "@/hooks/useOrders";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-
 
 interface OrderModalProps {
   isOpen: boolean;
@@ -27,10 +33,10 @@ const emptyService = {
   pris: 0,
 };
 
-const TOAST_THEME = "bg-card text-foreground border border-border"; // 👈 theme-aware toast skin
+const TOAST_THEME = "bg-card text-foreground border border-border";
 
 const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, mode, order, refreshOrders }) => {
-  const { create, checkEmail, update } = useOrder();
+  const { create, checkEmail, update, updateOrderStatus } = useOrder(); // 👈 include updateOrderStatus
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -46,6 +52,13 @@ const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, mode, order, r
     name?: string;
     services?: string[];
   }>({});
+
+  // 👇 helper to decide if "Complete" button should show
+  const canShowComplete =
+    mode === "view" &&
+    order &&
+    String(order.paymentStatus || "").toUpperCase() === "PAID" &&
+    String(order.orderStatus || "")?.toUpperCase() !== "COMPLETED";
 
   useEffect(() => {
     const fetchPersonIfNeeded = async () => {
@@ -73,7 +86,7 @@ const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, mode, order, r
             console.log("Fetched person for edit:", person);
           }
         } catch (error) {
-          console.error("Failed to fetch person in edit mode:", error);
+          console.error("Failed to fetch person in edit/view mode:", error);
         }
       }
     };
@@ -250,9 +263,22 @@ const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, mode, order, r
     return tomorrow.toISOString().split("T")[0];
   };
 
+  // 👇 complete handler
+  const handleComplete = async () => {
+    if (!order?.id) return;
+    try {
+      await updateOrderStatus(order.id, "completed"); // per your requirement
+      toast.success("Order marked as completed.", { className: TOAST_THEME });
+      onClose();
+      refreshOrders();
+    } catch (e) {
+      toast.error("Failed to complete order.", { className: TOAST_THEME });
+      console.error(e);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      {/* theme-safe text color */}
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden text-foreground">
         <DialogHeader>
           <DialogTitle>
@@ -294,7 +320,7 @@ const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, mode, order, r
             </div>
           </div>
 
-          {/* Scrollable Services container — theme-safe */}
+          {/* Services */}
           <div
             className="border border-border rounded-xl p-4 max-h-96 overflow-y-auto space-y-4 bg-card text-foreground shadow-sm"
             style={{ scrollbarWidth: "thin", scrollbarColor: "#cbd5e1 transparent" }}
@@ -307,7 +333,6 @@ const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, mode, order, r
               <div key={idx} className="border border-border rounded-lg p-4 space-y-2 bg-muted text-foreground relative">
                 <Label className="block font-semibold mb-1">Service {idx + 1}</Label>
 
-                {/* Remove button */}
                 {mode !== "view" && (
                   <button
                     className="absolute top-2 right-2 text-destructive hover:text-destructive/80"
@@ -408,6 +433,22 @@ const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, mode, order, r
             </Button>
           )}
         </div>
+
+        {/* 👇 Footer only for VIEW mode */}
+        {mode === "view" && (
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+
+            {/* Show Complete ONLY if paid and not already completed */}
+            {canShowComplete && (
+              <Button onClick={handleComplete}>
+                Complete
+              </Button>
+            )}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

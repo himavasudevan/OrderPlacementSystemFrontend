@@ -9,6 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch"; 
 
 interface ConfirmModalProps {
   open: boolean;
@@ -16,6 +17,14 @@ interface ConfirmModalProps {
   description?: string;
   onConfirm: () => void;
   onCancel: () => void;
+
+  // 👇 NEW (all optional/controlled)
+  confirmLabel?: string;
+  cancelLabel?: string;
+  showRefundToggle?: boolean;
+  refundChecked?: boolean;
+  onRefundChange?: (checked: boolean) => void;
+  refundLabel?: string;
 }
 
 export const ConfirmModal = ({
@@ -24,9 +33,16 @@ export const ConfirmModal = ({
   description,
   onConfirm,
   onCancel,
+
+  // NEW
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  showRefundToggle = false,
+  refundChecked = false,
+  onRefundChange,
+  refundLabel = "Refund payment to customer",
 }: ConfirmModalProps) => (
   <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
-    {/* DialogContent already uses theme tokens; we add subtle sizing + border tokens */}
     <DialogContent className="sm:max-w-md rounded-xl border border-border bg-card text-card-foreground">
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
@@ -37,13 +53,24 @@ export const ConfirmModal = ({
         )}
       </DialogHeader>
 
+      {showRefundToggle && (
+        <div className="mt-2 flex items-center justify-between gap-4 rounded-md border border-border bg-muted px-3 py-2">
+          <div className="flex-1">
+            <div className="font-medium">Refund</div>
+            <div className="text-sm text-muted-foreground">
+              {refundLabel}
+            </div>
+          </div>
+          <Switch checked={!!refundChecked} onCheckedChange={onRefundChange} />
+        </div>
+      )}
+
       <DialogFooter className="flex justify-end gap-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {cancelLabel}
         </Button>
-        {/* Use semantic destructive variant so it looks right in both themes */}
         <Button variant="destructive" onClick={onConfirm}>
-          Delete
+          {confirmLabel}
         </Button>
       </DialogFooter>
     </DialogContent>
